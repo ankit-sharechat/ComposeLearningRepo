@@ -1,7 +1,6 @@
 package com.example.composelearning
 
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
@@ -16,12 +15,10 @@ import androidx.compose.material.Divider
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,7 +27,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.android.exoplayer2.ExoPlayer
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
@@ -41,6 +37,8 @@ class MainActivity : ComponentActivity() {
                 RootViewMvi()
                 Divider()
                 RootViewNoMvi()
+                Divider()
+                RootView(Modifier.weight(1f))
             }
         }
     }
@@ -49,9 +47,6 @@ class MainActivity : ComponentActivity() {
     private fun ColumnScope.RootViewMvi() {
         LogCompositions(tag = "RootViewMvi")
         val viewModel: MyViewModel = viewModel()
-        val outsideCallback: () -> Unit = {
-            viewModel.onChangeConstantValue()
-        }
         val state by viewModel.state.collectAsState()
         Column(
             modifier = Modifier
@@ -65,23 +60,22 @@ class MainActivity : ComponentActivity() {
             //Callback created inside Composable
             CallbackFromOutSide(
                 content = state.contantValue,
-                outsideCallback = {
-                    outsideCallback()
-                })
+                outsideCallback = viewModel::onChangeConstantValue
+            )
 
             // Callback created inside Composable
-            ChangeContantButton(content = state.contantValue, changeContent = {
-                viewModel.onChangeConstantValue()
-            })
+            ChangeContantButton(
+                content = state.contantValue,
+                changeContent = viewModel::onChangeConstantValue
+            )
 
             //View Listening to progress
-            StartProgressButton(progress = state.progress) {
-                viewModel.onStartProgress()
-            }
+            StartProgressButton(
+                progress = state.progress,
+                onStartProgress = viewModel::onStartProgress
+            )
 
-            ChangeRandomButton(random = state.random) {
-                viewModel.updateRandom(it)
-            }
+            ChangeRandomButton(random = state.random, changeRandom = viewModel::updateRandom)
 
             //A Unstable Object
             TestView()
@@ -209,15 +203,6 @@ class MainActivity : ComponentActivity() {
         Text(text = "${exoplayer.hashCode()}")
     }
 
-}
-
-class Ref(var value: Int)
-
-@Composable
-inline fun LogCompositions(tag: String) {
-    val ref = remember { Ref(0) }
-    SideEffect { ref.value++ }
-    Log.d("RecompositionTrack", "$tag Compositions: ${ref.value}")
 }
 
 val list = listOf(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)
