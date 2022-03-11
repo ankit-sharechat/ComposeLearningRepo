@@ -1,7 +1,6 @@
 package com.example.composelearning
 
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
@@ -16,7 +15,6 @@ import androidx.compose.material.Divider
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -75,9 +73,7 @@ class MainActivity : ComponentActivity() {
                 onStartProgress = viewModel::onStartProgress
             )
 
-            ChangeRandomButton(random = state.random) {
-                viewModel.updateRandom(it)
-            }
+            ChangeRandomButton(random = state.random, changeRandom = viewModel::updateRandom)
 
             //A Unstable Object
             TestView()
@@ -205,15 +201,6 @@ class MainActivity : ComponentActivity() {
         Text(text = "${exoplayer.hashCode()}")
     }
 
-}
-
-class Ref(var value: Int)
-
-@Composable
-inline fun LogCompositions(tag: String) {
-    val ref = remember { Ref(0) }
-    SideEffect { ref.value++ }
-    Log.d("RecompositionTrack", "$tag Compositions: ${ref.value}")
 }
 
 val list = listOf(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)
