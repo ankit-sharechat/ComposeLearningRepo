@@ -45,10 +45,6 @@ class MainActivity : ComponentActivity() {
             verticalArrangement = Arrangement.SpaceEvenly,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-
-            var localCounter by remember {
-                mutableStateOf(0.0f)
-            }
             //Callback created inside Composable
             CallbackFromOutSide(content = state.contantValue, outsideCallback = outsideCallback)
 
@@ -102,10 +98,9 @@ class MainActivity : ComponentActivity() {
     }
 
 
-
     @Composable
     private fun TestView(param: ExoPlayer) {
-        LogCompositions(tag = "$param")
+        LogCompositions(tag = "TestViewExoPlayer ${param.hashCode()}")
         Text(text = "${param.hashCode()}")
     }
 

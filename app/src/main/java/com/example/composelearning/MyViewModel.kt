@@ -16,7 +16,7 @@ class MyViewModel : ContainerHost<MyState, MySideEffects>, ViewModel() {
     val state = container.stateFlow
 
     fun onStartProgress() = intent {
-        repeat(100) {
+        repeat(10) {
             delay(200)
             updateCounter(it)
         }
