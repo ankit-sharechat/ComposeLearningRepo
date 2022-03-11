@@ -21,7 +21,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,7 +29,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.android.exoplayer2.ExoPlayer
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
@@ -49,9 +47,6 @@ class MainActivity : ComponentActivity() {
     private fun ColumnScope.RootViewMvi() {
         LogCompositions(tag = "RootViewMvi")
         val viewModel: MyViewModel = viewModel()
-        val outsideCallback: () -> Unit = {
-            viewModel.onChangeConstantValue()
-        }
         val state by viewModel.state.collectAsState()
         Column(
             modifier = Modifier
@@ -65,19 +60,20 @@ class MainActivity : ComponentActivity() {
             //Callback created inside Composable
             CallbackFromOutSide(
                 content = state.contantValue,
-                outsideCallback = {
-                    outsideCallback()
-                })
+                outsideCallback = viewModel::onChangeConstantValue
+            )
 
             // Callback created inside Composable
-            ChangeContantButton(content = state.contantValue, changeContent = {
-                viewModel.onChangeConstantValue()
-            })
+            ChangeContantButton(
+                content = state.contantValue,
+                changeContent = viewModel::onChangeConstantValue
+            )
 
             //View Listening to progress
-            StartProgressButton(progress = state.progress) {
-                viewModel.onStartProgress()
-            }
+            StartProgressButton(
+                progress = state.progress,
+                onStartProgress = viewModel::onStartProgress
+            )
 
             ChangeRandomButton(random = state.random) {
                 viewModel.updateRandom(it)
