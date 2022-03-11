@@ -110,7 +110,7 @@ class MainActivity : ComponentActivity() {
             verticalArrangement = Arrangement.SpaceEvenly,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(text = "NO MVI")
+            Text(text = "STATEMVI")
             //Callback created inside Composable
             CallbackFromOutSide(
                 log = "NOMVI",
