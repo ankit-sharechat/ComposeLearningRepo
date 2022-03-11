@@ -7,83 +7,149 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.Button
-import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.Divider
 import androidx.compose.material.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.android.exoplayer2.ExoPlayer
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
-    @OptIn(ExperimentalMaterialApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        val viewModel = MyViewModel()
-        val outsideCallback: () -> Unit = {
-            viewModel.onChangeConstantValue()
-        }
         setContent {
-            RootView(viewModel, outsideCallback = outsideCallback)
+            Column(modifier = Modifier.fillMaxSize()) {
+                RootViewMvi()
+                Divider()
+                RootViewNoMvi()
+            }
         }
     }
 
     @Composable
-    private fun RootView(viewModel: MyViewModel, outsideCallback: () -> Unit) {
-        val state by viewModel.state.collectAsState()
-        val context = LocalContext.current
-        val exoplayer = remember(context) {
-            ExoPlayer.Builder(context).build()
+    private fun ColumnScope.RootViewMvi() {
+        LogCompositions(tag = "RootViewMvi")
+        val viewModel: MyViewModel = viewModel()
+        val outsideCallback: () -> Unit = {
+            viewModel.onChangeConstantValue()
         }
-
+        val state by viewModel.state.collectAsState()
         Column(
             modifier = Modifier
-                .fillMaxSize()
+                .fillMaxWidth()
+                .weight(1F)
                 .background(Color.White),
             verticalArrangement = Arrangement.SpaceEvenly,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            Text(text = "ORBIT MVI")
             //Callback created inside Composable
-            CallbackFromOutSide(content = state.contantValue, outsideCallback = outsideCallback)
+            CallbackFromOutSide(
+                content = state.contantValue,
+                outsideCallback = {
+                    outsideCallback()
+                })
 
-            //Callback created inside Composable
+            // Callback created inside Composable
             ChangeContantButton(content = state.contantValue, changeContent = {
                 viewModel.onChangeConstantValue()
             })
 
             //View Listening to progress
-            StartProgressButton(progress = state.progress, onStartProgress = {
+            StartProgressButton(progress = state.progress) {
                 viewModel.onStartProgress()
-            })
+            }
 
             //A Unstable Object
-            TestView(exoplayer)
+            TestView()
         }
     }
 
     @Composable
-    private fun CallbackFromOutSide(content: String, outsideCallback: () -> Unit) {
-        LogCompositions(tag = "CallbackFromOutSide Callback")
+    private fun ColumnScope.RootViewNoMvi() {
+        LogCompositions(tag = "RootViewNoMvi")
+        var state by remember { mutableStateOf(MyState(0)) }
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .background(Color.Gray),
+            verticalArrangement = Arrangement.SpaceEvenly,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(text = "NO MVI")
+            //Callback created inside Composable
+            CallbackFromOutSide(
+                log = "NOMVI",
+                content = state.contantValue,
+                outsideCallback = {
+                    state = state.copy(contantValue = "${System.currentTimeMillis()}")
+                })
+
+            //Callback created inside Composable
+            ChangeContantButton(log = "NOMVI", content = state.contantValue, changeContent = {
+                state = state.copy(contantValue = "${System.currentTimeMillis()}")
+            })
+
+            val scope = rememberCoroutineScope()
+            //View Listening to progress
+            StartProgressButton(progress = state.progress) {
+                scope.launch {
+                    repeat(10) {
+                        delay(200)
+                        state = state.copy(progress = it)
+                    }
+                }
+            }
+
+            //A Unstable Object
+            TestView(log = "NOMVI")
+        }
+    }
+
+    @Composable
+    private fun CallbackFromOutSide(
+        log: String = "MVI",
+        content: String,
+        outsideCallback: () -> Unit = {}
+    ) {
+        LogCompositions(tag = "CallbackFromOutSide$log Callback")
         Row {
             Button(onClick = outsideCallback) {
-                Text(text = "Update via Outsider Callback")
+                Text(text = "Out")
             }
             Text(text = content)
         }
     }
 
     @Composable
-    private fun ChangeContantButton(content: String, changeContent: () -> Unit) {
-        LogCompositions(tag = "ChangeContantButton Callback}")
+    private fun ChangeContantButton(
+        log: String = "MVI",
+        content: String,
+        changeContent: () -> Unit = {}
+    ) {
+        LogCompositions(tag = "ChangeContantButton$log Callback")
         Row {
             Button(onClick = changeContent) {
-                Text(text = "Update Value")
+                Text(text = "Update Out")
             }
             Text(text = content)
         }
@@ -91,8 +157,12 @@ class MainActivity : ComponentActivity() {
 
 
     @Composable
-    private fun StartProgressButton(progress: Int, onStartProgress: () -> Unit) {
-        LogCompositions(tag = "StartProgressButton")
+    private fun StartProgressButton(
+        log: String = "MVI",
+        progress: Int,
+        onStartProgress: () -> Unit
+    ) {
+        LogCompositions(tag = "StartProgressButton$log")
         Row {
             Button(onClick = onStartProgress) {
                 Text(text = "Start Progress")
@@ -103,18 +173,18 @@ class MainActivity : ComponentActivity() {
 
 
     @Composable
-    private fun TestView(param: ExoPlayer) {
-        LogCompositions(tag = "TestViewExoPlayer ${param.hashCode()}")
-        Text(text = "${param.hashCode()}")
+    private fun TestView(log: String = "MVI") {
+        LogCompositions(tag = "TestViewExoPlayer$log")
+        val context = LocalContext.current
+        val exoplayer = remember(context) {
+            ExoPlayer.Builder(context).build()
+        }
+        Text(text = "${exoplayer.hashCode()}")
     }
 
 }
 
-@Stable
-data class StableObject<T>(val value: T)
-
 class Ref(var value: Int)
-
 
 @Composable
 inline fun LogCompositions(tag: String) {
