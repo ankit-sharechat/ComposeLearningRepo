@@ -37,6 +37,8 @@ class MainActivity : ComponentActivity() {
                 RootViewMvi()
                 Divider()
                 RootViewNoMvi()
+                Divider()
+                RootView(Modifier.weight(1f))
             }
         }
     }
