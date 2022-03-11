@@ -15,6 +15,7 @@ import androidx.compose.material.Button
 import androidx.compose.material.Divider
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -78,6 +79,10 @@ class MainActivity : ComponentActivity() {
                 viewModel.onStartProgress()
             }
 
+            ChangeRandomButton(random = state.random) {
+                viewModel.updateRandom(it)
+            }
+
             //A Unstable Object
             TestView()
         }
@@ -87,6 +92,16 @@ class MainActivity : ComponentActivity() {
     private fun ColumnScope.RootViewNoMvi() {
         LogCompositions(tag = "RootViewNoMvi")
         var state by remember { mutableStateOf(MyState(0)) }
+        var initProgress by remember { mutableStateOf(false) }
+        LaunchedEffect(initProgress) {
+            if (initProgress) {
+                repeat(10) {
+                    delay(200)
+                    state = state.copy(progress = it)
+                }
+                initProgress = false
+            }
+        }
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -109,15 +124,13 @@ class MainActivity : ComponentActivity() {
                 state = state.copy(contantValue = "${System.currentTimeMillis()}")
             })
 
-            val scope = rememberCoroutineScope()
             //View Listening to progress
             StartProgressButton(progress = state.progress) {
-                scope.launch {
-                    repeat(10) {
-                        delay(200)
-                        state = state.copy(progress = it)
-                    }
-                }
+                initProgress = true
+            }
+
+            ChangeRandomButton(log = "STATEMVI", random = state.random) {
+                state = state.copy(random = list.random())
             }
 
             //A Unstable Object
@@ -155,12 +168,26 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    @Composable
+    private fun ChangeRandomButton(
+        log: String = "MVI",
+        random: Int,
+        changeRandom: (Int) -> Unit = {}
+    ) {
+        LogCompositions(tag = "ChangeRandomButton$log ${changeRandom.hashCode()}")
+        Row {
+            Button(onClick = { changeRandom(list.random()) }) {
+                Text(text = "Random")
+            }
+            Text(text = "$random")
+        }
+    }
 
     @Composable
     private fun StartProgressButton(
         log: String = "MVI",
         progress: Int,
-        onStartProgress: () -> Unit
+        onStartProgress: () -> Unit = {}
     ) {
         LogCompositions(tag = "StartProgressButton$log")
         Row {
@@ -193,3 +220,4 @@ inline fun LogCompositions(tag: String) {
     Log.d("RecompositionTrack", "$tag Compositions: ${ref.value}")
 }
 
+val list = listOf(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)

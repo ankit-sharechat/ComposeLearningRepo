@@ -33,6 +33,12 @@ class MyViewModel : ContainerHost<MyState, Nothing>, ViewModel() {
             state.copy(progress = it)
         }
     }
+
+    fun updateRandom(random: Int) = intent {
+        reduce {
+            state.copy(random = random)
+        }
+    }
 }
 
 @Stable
@@ -40,5 +46,5 @@ class MyViewModel : ContainerHost<MyState, Nothing>, ViewModel() {
 data class MyState(
     val progress: Int,
     val contantValue: String = "ContantValue",
-    val flag: Boolean = false
+    val random: Int = -1
 )
